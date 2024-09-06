@@ -1,4 +1,11 @@
-import { Client, Account, ID } from "react-native-appwrite";
+import {
+  Client,
+  Account,
+  ID,
+  Avatars,
+  Databases,
+  Query,
+} from "react-native-appwrite";
 
 export const appwriteConfig = {
   endpoint: "https://cloud.appwrite.io/v1",
@@ -17,61 +24,96 @@ client
   .setPlatform(appwriteConfig.platform);
 
 const account = new Account(client);
+const avatars = new Avatars(client);
+const databases = new Databases(client);
 
 // Register user
 export const createUser = async (email, password, username) => {
   try {
+    // await signOut();
+
+    // ---- account.create: Létrehoz egy új felhasználói fiókot az e-mail, jelszó és felhasználónév alapján.
     const newAccount = await account.create(
-      ID.unique(),
+      ID.unique(), // create a new unique ID
       email,
       password,
       username
     );
 
     if (!newAccount) throw new Error("Account creation failed");
+
+    // ---- avatars.getInitials: Létrehoz egy avatárt a felhasználónév kezdőbetűiből.
+    const avatarUrl = avatars.getInitials(username);
+
+    // ---- signIn: Automatikusan bejelentkezteti a felhasználót a regisztráció után.
+    await signIn(email, password);
+
+    // ---- databases.createDocument: Elmenti az új felhasználó adatait az adatbázisban.
+    const newUser = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      ID.unique(),
+      { accountId: newAccount.$id, email, username, avatar: avatarUrl }
+      // $ Appwrite szintaxis: beépített mező
+    );
+
+    console.log("User created successfully");
+    return newUser;
   } catch (error) {
     console.log(error);
     throw new Error(error);
   }
 };
 
-// -------- Copied from https://appwrite.io/docs/quick-starts/react-native --------
-// import { StatusBar } from 'expo-status-bar';
-// import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
-// import { Client, Account, ID } from 'react-native-appwrite';
-// import React, { useState } from 'react';
+// Sign In
+export const signIn = async (email, password) => {
+  try {
+    // await signOut();
+    // await account.deleteSessions();
 
-// let client;
-// let account;
+    // ---- account.createEmailPasswordSession: Létrehoz egy új munkamenetet a felhasználó számára.
+    const session = await account.createEmailPasswordSession(email, password);
+    console.log("User signed in successfully");
+    return session;
+  } catch (error) {
+    console.log(error);
+    throw new Error(error);
+  }
+};
 
-// client = new Client();
-// client
-//   .setEndpoint('https://cloud.appwrite.io/v1')
-//   .setProject('sisyphus')
-//   .setPlatform('com.example.my-app');
+// Get Current User
+export const getCurrentUser = async () => {
+  try {
+    // ---- account.get: Lekéri az aktuális felhasználói fiók adatait.
+    const currentAccount = await account.get();
 
-// account = new Account(client);
-// export default function App() {
-//   const [loggedInUser, setLoggedInUser] = useState(null);
-//   const [email, setEmail] = useState('');
-//   const [password, setPassword] = useState('');
-//   const [name, setName] = useState('');
+    if (!currentAccount) throw new Error("No current account found");
 
-//   async function login(email, password) {
-//     await account.createEmailPasswordSession(email, password);
-//     setLoggedInUser(await account.get());
-//   }
+    // ---- databases.listDocuments: Lekéri az adatbázisból a felhasználóhoz tartozó adatokat.
+    const currentUser = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      [Query.equal("accountId", currentAccount.$id)]
+    );
 
-//   async function register(email, password, name) {
-//     await account.create(ID.unique(), email, password, name);
-//     await login(email, password);
-//     setLoggedInUser(await account.get());
-//   }
-//   return (
-//     // ... Implement your UI here
-//   );
-// }
+    if (!currentUser) throw new Error("No current user found");
 
-// const styles = StyleSheet.create({
-//     // ... define some tyles
-// });
+    // ---- Visszaadja az első dokumentumot, ami az aktuális felhasználóhoz tartozik.
+    return currentUser.documents[0];
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// Sign Out
+export const signOut = async () => {
+  try {
+    // ---- account.deleteSession("current"): Törli az aktuális munkamenetet.
+    const session = await account.deleteSession("current");
+    console.log("User signed out successfully");
+    return session;
+  } catch (error) {
+    console.log(error);
+    throw new Error(error);
+  }
+};
