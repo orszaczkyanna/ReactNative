@@ -17,6 +17,17 @@ export const appwriteConfig = {
   storageId: "66d69260001a98347ab2",
 };
 
+// Destructuring
+const {
+  endpoint,
+  platform,
+  projectId,
+  databaseId,
+  userCollectionId,
+  videoCollectionId,
+  storageId,
+} = appwriteConfig;
+
 const client = new Client();
 client
   .setEndpoint(appwriteConfig.endpoint)
@@ -112,6 +123,18 @@ export const signOut = async () => {
     const session = await account.deleteSession("current");
     console.log("User signed out successfully");
     return session;
+  } catch (error) {
+    console.log(error);
+    throw new Error(error);
+  }
+};
+
+// Get all video Posts
+export const getAllPosts = async () => {
+  try {
+    // ---- databases.listDocuments: Lekéri a videó posztokat tartalmazó gyűjtemény összes dokumentumát, és visszaadja azokat.
+    const posts = await databases.listDocuments(databaseId, videoCollectionId);
+    return posts.documents;
   } catch (error) {
     console.log(error);
     throw new Error(error);

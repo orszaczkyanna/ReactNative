@@ -1,18 +1,31 @@
-import { View, Text, Image, FlatList, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  RefreshControl,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { images } from "../../constants";
 import SearchInput from "../../components/SearchInput";
 import Trending from "../../components/Trending";
 import EmptyState from "../../components/EmptyState";
 
+import useAppwrite from "../../lib/useAppwrite";
+import { getAllPosts } from "../../lib/appwrite";
+import VideoCard from "../../components/VideoCard";
+
 const Home = () => {
+  const { data: posts, refetch } = useAppwrite(getAllPosts); // rename data to posts
+
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // recall videos -> if any new videos appeared
+    await refetch(); // fetchData() <= getAllPosts()
     setRefreshing(false);
   };
 
@@ -20,11 +33,9 @@ const Home = () => {
     <SafeAreaView className="bg-primary h-full">
       {/* FlatList can handle both horizontal and vertical scrolling at the same time. */}
       <FlatList
-        data={[{ id: 1 }, { id: 2 }, { id: 3 }]}
+        data={posts}
         keyExtractor={(item) => item.$id}
-        renderItem={({ item }) => (
-          <Text className="text-white text-4xl">{item.id}</Text>
-        )}
+        renderItem={({ item }) => <VideoCard video={item} />}
         ListHeaderComponent={() => (
           <View className="my-6 px-4 space-y-6">
             {/* Text and Logo */}
