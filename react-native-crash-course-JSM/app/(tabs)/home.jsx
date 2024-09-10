@@ -15,11 +15,12 @@ import Trending from "../../components/Trending";
 import EmptyState from "../../components/EmptyState";
 
 import useAppwrite from "../../lib/useAppwrite";
-import { getAllPosts } from "../../lib/appwrite";
+import { getAllPosts, getLatestPosts } from "../../lib/appwrite";
 import VideoCard from "../../components/VideoCard";
 
 const Home = () => {
   const { data: posts, refetch } = useAppwrite(getAllPosts); // rename data to posts
+  const { data: latestPosts } = useAppwrite(getLatestPosts); // rename data to latestPosts
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -66,7 +67,7 @@ const Home = () => {
                 Latest Videos
               </Text>
               {/*latestPosts ?? []: If it doesn't exist, make it an empty array so it doesn't break */}
-              <Trending posts={[{ id: 4 }, { id: 5 }, { id: 6 }] ?? []} />
+              <Trending posts={latestPosts ?? []} />
             </View>
           </View>
         )}
