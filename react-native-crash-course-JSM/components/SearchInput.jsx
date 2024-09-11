@@ -1,9 +1,13 @@
-import { View, TextInput, Image, TouchableOpacity } from "react-native";
 import { useState } from "react";
-
+import { View, TextInput, Image, TouchableOpacity, Alert } from "react-native";
+import { usePathname, router } from "expo-router";
 import { icons } from "../constants";
 
-const SearchInput = ({ value, handleChangeText, otherStyles, ...props }) => {
+const SearchInput = ({ initialQuery }) => {
+  const pathname = usePathname();
+  // pathname: az aktuális útvonalat adja vissza, az URL-t, ahol jelenleg tartózkodik az alkalmazás
+  const [query, setQuery] = useState(initialQuery || "");
+
   return (
     <View
       className={
@@ -11,14 +15,30 @@ const SearchInput = ({ value, handleChangeText, otherStyles, ...props }) => {
       }
     >
       <TextInput
-        value={value}
+        value={query}
         placeholder="Search for a video topic"
-        placeholderTextColor="#7b7b8b"
-        onChangeText={handleChangeText}
+        placeholderTextColor="#cdcde0"
+        onChangeText={(e) => setQuery(e)} // !Note: 'e' is the entered text string, not an event object
         className="flex-1 text-white text-base font-pregular mt-0.5"
-        {...props}
       />
-      <TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => {
+          if (!query) {
+            Alert.alert(
+              "Missing query",
+              "Please input something to search results across database"
+            );
+          }
+          if (pathname.startsWith("/search")) {
+            router.setParams({ query });
+            // Ha már a keresési oldalon vagyunk, a router nem vált át egy új oldalra, hanem egyszerűen frissíti a keresési paramétereket
+          } else {
+            router.push(`/search/${query}`);
+            // Ha nem vagyunk a keresési oldalon, a router az új útvonalra navigál, ami a megadott keresési kifejezés (például /search/cats) lesz.
+          }
+        }}
+      >
         <Image source={icons.search} resizeMode="contain" className="w-5 h-5" />
       </TouchableOpacity>
     </View>

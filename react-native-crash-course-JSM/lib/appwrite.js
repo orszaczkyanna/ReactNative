@@ -154,3 +154,18 @@ export const getLatestPosts = async () => {
     throw new Error(error);
   }
 };
+
+// Get video posts that matches search query
+export const searchPosts = async (query) => {
+  try {
+    const posts = await databases.listDocuments(databaseId, videoCollectionId, [
+      // ---- Query.search("title", query): A "title" mezőben keres a megadott "query" kifejezésre
+      Query.search("title", query),
+    ]);
+
+    return posts.documents;
+  } catch (error) {
+    console.log(error);
+    throw new Error(error);
+  }
+};
