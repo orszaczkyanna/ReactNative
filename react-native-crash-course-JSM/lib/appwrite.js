@@ -169,3 +169,16 @@ export const searchPosts = async (query) => {
     throw new Error(error);
   }
 };
+
+// Get video posts created by user
+export const getUserPosts = async (userId) => {
+  try {
+    const posts = await databases.listDocuments(databaseId, videoCollectionId, [
+      Query.equal("creator", userId),
+    ]);
+    return posts.documents;
+  } catch (error) {
+    console.log(error);
+    throw new Error(error);
+  }
+};
