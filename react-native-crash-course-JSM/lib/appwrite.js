@@ -5,6 +5,7 @@ import {
   Avatars,
   Databases,
   Query,
+  Storage,
 } from "react-native-appwrite";
 
 export const appwriteConfig = {
@@ -37,6 +38,7 @@ client
 const account = new Account(client);
 const avatars = new Avatars(client);
 const databases = new Databases(client);
+const storage = new Storage(client);
 
 // Register user
 export const createUser = async (email, password, username) => {
@@ -133,7 +135,9 @@ export const signOut = async () => {
 export const getAllPosts = async () => {
   try {
     // ---- databases.listDocuments: Lekéri a videó posztokat tartalmazó gyűjtemény összes dokumentumát, és visszaadja azokat.
-    const posts = await databases.listDocuments(databaseId, videoCollectionId);
+    const posts = await databases.listDocuments(databaseId, videoCollectionId, [
+      Query.orderDesc("$createdAt"),
+    ]);
     return posts.documents;
   } catch (error) {
     console.log(error);
@@ -175,10 +179,120 @@ export const getUserPosts = async (userId) => {
   try {
     const posts = await databases.listDocuments(databaseId, videoCollectionId, [
       Query.equal("creator", userId),
+      Query.orderDesc("$createdAt"),
     ]);
     return posts.documents;
   } catch (error) {
     console.log(error);
+    throw new Error(error);
+  }
+};
+
+// Get File Preview
+export const getFilePreview = async (fileId, type) => {
+  let fileUrl;
+
+  try {
+    switch (type) {
+      case "video":
+        // ---- storage.getFileView: olyan URL-t ad vissza, amely közvetlenül megjeleníti a fájl tartalmát a böngészőben
+        // Létrehoz egy linket, ahol a videófájl megnyitható és lejátszható.
+        fileUrl = storage.getFileView(storageId, fileId);
+        break;
+      case "image":
+        // ---- storage.getFilePreview: Létrehoz egy URL-t a képfájl előnézetének a megadott paraméterek alapján
+        // A getFileView-val ellentétben lehetőséget ad arra, hogy vágás, méretezés, és egyéb beállítások alapján módosítsuk az előnézeti képet.
+        fileUrl = storage.getFilePreview(
+          storageId,
+          fileId,
+          2000, // szélesség
+          2000, // magasság
+          "top", // gravity=vágási opció: átméretezés vagy vágás után a kép felső része legyen megtartva
+          100 // minőség százalékban
+        );
+        break;
+      default:
+        console.log(`Invalid file type: ${type}`);
+        break;
+    }
+
+    if (!fileUrl) {
+      console.log("Invalid file url");
+      throw new Error("Invalid file url");
+    }
+
+    // Visszaadja a fájl URL-jét
+    return fileUrl;
+  } catch (error) {
+    console.log(`Error during creating preview: ${error}`);
+    throw new Error(error);
+  }
+};
+
+// Upload File
+export const uploadFile = async (file, type) => {
+  if (!file) return; // Ha nincs fájl, kilép a függvényből
+
+  // // ----- ImagePicker version -----
+  // const asset = {
+  //   name: file.fileName,
+  //   type: file.mimeType, // mime type e.g. image/jpeg
+  //   size: file.fileSize,
+  //   uri: file.uri,
+  // };
+
+  // ----- DocumentPicker version -----
+  const { mimeType, ...rest } = file; // MIME típust külön választja, a maradék adatot változatlanul hagyja (...rest: naming convention)
+  const asset = { type: mimeType, ...rest }; // rename mimeType to type for Appwrite
+
+  try {
+    // storage.createFile: Feltölti a fájlt a megadott Appwrite tárhelyre, egyedi azonosítót generálva neki.
+    const uploadedFile = await storage.createFile(
+      storageId, // a tároló azonosítója
+      ID.unique(), // egyedi fájlazonosító létrehozása
+      asset // a feltöltendő fájl adatai
+    );
+
+    // Lekéri az előnézet URL-jét a feltöltött fájlhoz a típusa alapján
+    const fileUrl = await getFilePreview(uploadedFile.$id, type);
+
+    // Visszaadja a fájl URL-jét
+    return fileUrl;
+  } catch (error) {
+    console.log(`Error during file upload: ${error}`);
+    throw new Error(error);
+  }
+};
+
+// Create Video Post
+export const createVideo = async (form) => {
+  try {
+    // ---- Promise.all: lehetővé teszi több Promise (aszinron művelet (objektum)) párhuzamos végrehajtását, majd egyszerre várja meg mindegyik eredményét
+    // A Promise-okat tömbben kell megadni
+    // Egyszerre tölti fel a videót és a hozzá tartozó thumbnailt
+    const [thumbnailUrl, videoUrl] = await Promise.all([
+      uploadFile(form.thumbnail, "image"),
+      uploadFile(form.video, "video"),
+    ]);
+
+    // ---- databases.createDocument: Új videó bejegyzést hoz létre az adatbázisban a megadott adatokkal
+    const newPost = await databases.createDocument(
+      databaseId,
+      videoCollectionId,
+      ID.unique(),
+      {
+        title: form.title,
+        thumbnail: thumbnailUrl,
+        video: videoUrl,
+        prompt: form.prompt,
+        creator: form.userId,
+      }
+    );
+
+    // Visszaadja az új bejegyzést
+    return newPost;
+  } catch (error) {
+    console.log(`Error during creating video: ${error}`);
     throw new Error(error);
   }
 };

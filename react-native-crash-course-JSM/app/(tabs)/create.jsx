@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Video, ResizeMode } from "expo-av";
+import { router } from "expo-router";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 
 import {
   View,
@@ -14,6 +17,8 @@ import {
 import FormField from "../../components/FormField";
 import CustomButton from "../../components/CustomButton";
 import { icons } from "../../constants";
+import { useGlobalContext } from "../../context/GlobalContextProvider";
+import { createVideo } from "../../lib/appwrite";
 
 const Create = () => {
   const [uploading, setUploading] = useState(false);
@@ -24,7 +29,70 @@ const Create = () => {
     prompt: "",
   });
 
-  const submit = () => {};
+  const { user } = useGlobalContext();
+
+  const openPicker = async (selectType) => {
+    // // ----- ImagePicker version -----
+    // let result = await ImagePicker.launchImageLibraryAsync({
+    //   mediaTypes:
+    //     selectType === "image"
+    //       ? ImagePicker.MediaTypeOptions.Images
+    //       : ImagePicker.MediaTypeOptions.Videos,
+    //   aspect: [4, 3],
+    //   quality: 1,
+    // });
+
+    // ----- DocumentPicker version -----
+    const result = await DocumentPicker.getDocumentAsync({
+      type:
+        selectType === "image"
+          ? ["image/png", "image/jpg", "image/jpeg"]
+          : ["video/mp4", "video/gif"],
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      switch (selectType) {
+        case "image":
+          setForm({ ...form, thumbnail: result.assets[0] });
+          // assets[0], mert az expo-document-picker az assets tömböt használja a kiválasztott fájl adataihoz
+          break;
+        case "video":
+          setForm({ ...form, video: result.assets[0] });
+          break;
+        default:
+          console.log(`Unexpected type: ${selectType}`);
+          break;
+      }
+      // Alert.alert("Document picked", JSON.stringify(result, null, 2));
+      // console.log(result);
+    }
+    // else {
+    //   setTimeout(() => {
+    //     Alert.alert("Document picked", JSON.stringify(result, null, 2));
+    //   }, 100);
+    // }
+  };
+
+  const submit = async () => {
+    if (!form.title || !form.video || !form.thumbnail || !form.prompt) {
+      return Alert.alert("Please fill in all the fields");
+      // A return megakadályozza, hogy a kód a figyelmeztetés után tovább fusson
+    }
+
+    setUploading(true);
+    try {
+      await createVideo({ ...form, userId: user.$id });
+
+      Alert.alert("Success", "Uploaded successfully");
+      router.push("/home");
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", error.message);
+    } finally {
+      setForm({ title: "", video: null, thumbnail: null, prompt: "" });
+      setUploading(false);
+    }
+  };
 
   return (
     <SafeAreaView className="bg-primary h-full">
@@ -45,7 +113,7 @@ const Create = () => {
           <Text className="text-gray-100 text-base font-pmedium">
             Upload Video
           </Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => openPicker("video")}>
             {form.video ? (
               <Video
                 source={{ uri: form.video.uri }}
@@ -72,7 +140,7 @@ const Create = () => {
             Thumbnail Image
           </Text>
 
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => openPicker("image")}>
             {form.thumbnail ? (
               <Image
                 source={{ uri: form.thumbnail.uri }}
