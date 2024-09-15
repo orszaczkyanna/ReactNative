@@ -296,3 +296,90 @@ export const createVideo = async (form) => {
     throw new Error(error);
   }
 };
+
+// Get saved videos by user
+export const getSavedPosts = async (userId) => {
+  try {
+    // Összes videó lekérdezése
+    const posts = await databases.listDocuments(databaseId, videoCollectionId, [
+      Query.orderDesc("$createdAt"),
+    ]);
+
+    // Szűri azokat, ahol a userId benne van a saved_by mezőjében (azon belül user.$id)
+    const savedPosts = posts.documents.filter((video) =>
+      video.saved_by?.some((user) => user.$id === userId)
+    );
+
+    // Visszaadja a felhasználó által mentett videókat
+    return savedPosts;
+  } catch (error) {
+    console.log(error);
+    throw new Error(error);
+  }
+};
+
+// Save videos
+export const savePost = async (userId, videoId) => {
+  try {
+    // Kiválasztott videó aktuális állapota
+    const video = await databases.getDocument(
+      databaseId,
+      videoCollectionId,
+      videoId
+    );
+
+    // Ha még senki nem mentette a videót, undefined vagy null helyett üres tömböt használjon, hogy ne lépjen fel hiba a spread operátor használatánál
+    const savedBy = video.saved_by || [];
+
+    // Ha már mentette a felhasználó, akkor ne változzon a tömb
+    // különben hozzáadjuk a userId-t a 'saved_by' mezőhöz.
+    const updatedSavedBy = savedBy.includes(userId)
+      ? savedBy
+      : [...savedBy, userId];
+
+    // Frissíti a videó dokumentumot az új 'saved_by' értékkel
+    const updatedVideo = await databases.updateDocument(
+      databaseId,
+      videoCollectionId,
+      videoId,
+      { saved_by: updatedSavedBy }
+    );
+
+    // Visszaadja a frissített videót
+    return updatedVideo;
+  } catch (error) {
+    console.log(error);
+    throw new Error(`Failed to save video.\n${error}`);
+  }
+};
+
+// Remove saved videos
+export const removeSavedPost = async (userId, videoId) => {
+  try {
+    // Lekéri a videó dokumentumot az azonosító alapján
+    const video = await databases.getDocument(
+      databaseId,
+      videoCollectionId,
+      videoId
+    );
+
+    // Eltávolítja a felhasználó azonosítóját a 'saved_by' mezőből
+    // szűrés a nem egyező userId-k alapján
+    const updatedSavedBy =
+      video.saved_by?.filter((user) => user.$id !== userId) || [];
+
+    // Frissíti a videó dokumentumot az új 'saved_by' értékkel
+    const updatedVideo = await databases.updateDocument(
+      databaseId,
+      videoCollectionId,
+      videoId,
+      { saved_by: updatedSavedBy }
+    );
+
+    // Visszaadja a frissített videót
+    return updatedVideo;
+  } catch (error) {
+    console.log(error);
+    throw new Error(`Failed to remove saved video.\n${error}`);
+  }
+};

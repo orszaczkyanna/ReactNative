@@ -1,17 +1,23 @@
-import { useState } from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
 import { icons } from "../constants";
 import { Video, ResizeMode } from "expo-av";
 
+import { usePathname } from "expo-router";
+import SaveButton from "./SaveButton";
+
 const VideoCard = ({
   video: {
+    $id,
     title,
     thumbnail,
-    video,
+    video, // video URL-je
     creator: { username, avatar },
   },
 }) => {
   const [play, setPlay] = useState(false);
+
+  const pathname = usePathname();
 
   return (
     <View className="flex-col items-center px-4 mb-14">
@@ -39,7 +45,10 @@ const VideoCard = ({
             </Text>
           </View>
         </View>
-        <View className="pt-2">
+        <View className="pt-2 flex-row space-x-2 items-center">
+          {pathname !== "/profile" && (
+            <SaveButton video$id={$id} title={title} />
+          )}
           <Image source={icons.menu} className="w-5 h-5" resizeMode="contain" />
         </View>
       </View>
