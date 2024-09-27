@@ -9,7 +9,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        rmono: ["Roboto-Mono", "sans-serif"],
+        // rmono: ["Roboto-Mono", "sans-serif"],
+        rmono: ["Roboto-Mono"],
+        // React Native does not support fallback fonts. If an array of fonts are provided, NativeWind will only use the first font.
       },
     },
   },

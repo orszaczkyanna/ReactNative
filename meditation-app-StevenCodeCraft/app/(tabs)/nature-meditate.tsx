@@ -1,6 +1,7 @@
 import { View, Text, FlatList, Pressable, ImageBackground } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 
 import AppGradient from "@/components/AppGradient";
 import { MEDITATION_DATA } from "@/constants/MeditationData"; // export
@@ -26,7 +27,8 @@ const NatureMeditate = () => {
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => console.log(item.title)}
+                // @ts-ignore
+                onPress={() => router.push(`/meditate/${item.id}`)}
                 className="h-48 my-3 rounded-md overflow-hidden" // overflow-hidden nélkül nem kerekíti le
               >
                 <ImageBackground
