@@ -9,3 +9,7 @@ declare module "*.jpg";
 declare module "*.jpeg";
 declare module "*.gif";
 declare module "*.webp";
+
+// Hangok
+declare module "*.mp3";
+declare module "*.wav";
