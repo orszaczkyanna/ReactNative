@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { View, Text, ImageBackground, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Audio } from "expo-av";
@@ -9,10 +9,15 @@ import AppGradient from "@/components/AppGradient";
 import CustomButton from "@/components/CustomButton";
 import { MEDITATION_DATA, AUDIO_FILES } from "@/constants/MeditationData";
 
+import { TimerContext } from "@/context/TimerContext";
+
 const Meditate = () => {
   const { id } = useLocalSearchParams(); // string
 
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
+  const { duration: secondsRemaining, setDuration: setSecondsRemaining } =
+    useContext(TimerContext);
+  // const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
+
   const [isMeditating, setMeditating] = useState<boolean>(false);
   const [audioSound, setAudioSound] = useState<Audio.Sound>();
   const [isPlayingAudio, setPlayingAudio] = useState<boolean>(false);
@@ -46,6 +51,8 @@ const Meditate = () => {
     // a cleanup function nem támogatja az aszinkron műveleteket, ezért nem használható az await
     return () => {
       audioSound?.unloadAsync(); // teljesen eltávolítja a hang fájlt a memóriából
+
+      setSecondsRemaining(10); // unmountolásnál álljon vissza 10 másodpercre
     };
   }, [audioSound]);
 
@@ -99,6 +106,13 @@ const Meditate = () => {
   ).padStart(2, "0");
   const formattedTimeSeconds = String(secondsRemaining % 60).padStart(2, "0");
 
+  // ---- Function for Handle Adjust Duration Modal ----
+  const handleAdjustDuration = () => {
+    if (isMeditating) toggleMeditationSessionStatus();
+
+    router.push("/adjust-meditation-duration");
+  };
+
   return (
     <View className="flex-1">
       <ImageBackground
@@ -125,6 +139,10 @@ const Meditate = () => {
 
           {/* Buttons */}
           <View className="mb-5">
+            <CustomButton
+              title="Adjust duration"
+              onPress={handleAdjustDuration} // reference to the function
+            />
             <CustomButton
               title={isMeditating ? "Stop" : "Start Meditation"}
               onPress={toggleMeditationSessionStatus}

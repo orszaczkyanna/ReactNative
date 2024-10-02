@@ -1,6 +1,7 @@
 import { Stack, SplashScreen } from "expo-router";
 import { useEffect } from "react";
 import { useFonts } from "expo-font";
+import TimerProvider from "@/context/TimerContext";
 
 // This will prevent the Splash Screen from auto hiding until loading all the font assets
 SplashScreen.preventAutoHideAsync();
@@ -34,11 +35,18 @@ const RootLayout = () => {
   }
 
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="meditate/[id]" options={{ headerShown: false }} />
-    </Stack>
+    <TimerProvider>
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="meditate/[id]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="(modal)/adjust-meditation-duration"
+          options={{ headerShown: false, presentation: "modal" }}
+          // iOS-en modális stílusú ablakot nyit, Androidon nem látszik különbség
+        />
+      </Stack>
+    </TimerProvider>
   );
 };
 
