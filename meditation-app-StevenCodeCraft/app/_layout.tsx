@@ -35,6 +35,7 @@ const RootLayout = () => {
   }
 
   return (
+    // Context Provider használata
     <TimerProvider>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />

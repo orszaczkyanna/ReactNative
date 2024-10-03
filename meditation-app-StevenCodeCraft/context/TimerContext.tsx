@@ -1,11 +1,13 @@
 import {
   createContext,
+  useContext,
   useState,
   Dispatch,
   SetStateAction,
   ReactNode,
 } from "react";
 
+// ---- 1. A Context által megosztott adatok típusának definiálása ----
 interface TimerContextType {
   duration: number;
   setDuration: Dispatch<SetStateAction<number>>; // Azt is tudja kezelni, amikor függvényt kap, ami számértéket ad vissza, pl. setCount(prevCount => prevCount + 1)
@@ -15,16 +17,31 @@ interface TimerContextType {
   // <number> az új érték szám legyen, vagy számértéket visszaadó függvény
 }
 
-export const TimerContext = createContext<TimerContextType>({
-  duration: 10, // Biztonsági alapértelmezett érték, ha nincs Provider
-  setDuration: () => {},
-});
+// // ---- 2. Context létrehozása alapértelmezett értékekkel ----
+// export const TimerContext = createContext<TimerContextType>({
+//   duration: 10, // Biztonsági alapértelmezett érték, arra az esetre ha nincs Provider
+//   setDuration: () => {},
+// });
 
-interface TimerProviderProps {
-  children: ReactNode;
-}
+// ---- 2. Context létrehozása ----
+export const TimerContext = createContext<TimerContextType | undefined>(
+  undefined
+);
 
-const TimerProvider = ({ children }: TimerProviderProps) => {
+// ---- 3. Custom hook létrehozása a Context használatának egyszerűsítésére és ellenőrzésére ----
+export const useTimerContext = () => {
+  // return useContext(TimerContext);
+
+  const context = useContext(TimerContext);
+  // Ha a context lehet undefined, akkor kötelező ellenőrizni
+  if (!context) {
+    throw new Error("useTimerContext must be used within a TimerProvider");
+  }
+  return context;
+};
+
+// ---- 4. A Provider komponens definiálása, amely a Context értékeit biztosítja ----
+const TimerProvider = ({ children }: { children: ReactNode }) => {
   const [duration, setDuration] = useState(10); // Tényleges kezdőérték
   return (
     <TimerContext.Provider value={{ duration, setDuration }}>

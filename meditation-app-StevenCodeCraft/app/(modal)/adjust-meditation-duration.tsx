@@ -4,11 +4,10 @@ import AppGradient from "@/components/AppGradient";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import CustomButton from "@/components/CustomButton";
 
-import { useContext } from "react";
-import { TimerContext } from "@/context/TimerContext";
+import { useTimerContext } from "@/context/TimerContext";
 
 const AdjustMeditationDuration = () => {
-  const { setDuration } = useContext(TimerContext);
+  const { setDuration } = useTimerContext(); // useContext(TimerContext);
 
   const handlePress = (duration: number) => {
     setDuration(duration);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, ImageBackground, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Audio } from "expo-av";
@@ -9,13 +9,13 @@ import AppGradient from "@/components/AppGradient";
 import CustomButton from "@/components/CustomButton";
 import { MEDITATION_DATA, AUDIO_FILES } from "@/constants/MeditationData";
 
-import { TimerContext } from "@/context/TimerContext";
+import { useTimerContext } from "@/context/TimerContext";
 
 const Meditate = () => {
   const { id } = useLocalSearchParams(); // string
 
   const { duration: secondsRemaining, setDuration: setSecondsRemaining } =
-    useContext(TimerContext);
+    useTimerContext(); // useContext(TimerContext);
   // const [secondsRemaining, setSecondsRemaining] = useState<number>(10);
 
   const [isMeditating, setMeditating] = useState<boolean>(false);
@@ -29,6 +29,8 @@ const Meditate = () => {
     // Exit useEffect when we reach 0
     if (secondsRemaining === 0) {
       setMeditating(false);
+      if (isPlayingAudio) audioSound?.pauseAsync();
+      setPlayingAudio(false);
       return;
     }
 
